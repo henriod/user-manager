@@ -46,6 +46,12 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return self.queryset
+        return self.queryset.filter(user=user)
+
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -89,7 +95,7 @@ class UserProfileUpdate(APIView):
     #http_method_names = ['patch', 'head']
 
 
-    def patch(self, *args, **kwargs):
+    def patch(self, request, *args, **kwargs):
         profile = self.request.user.profile
         serializer = self.serializer_class(
             profile, data=self.request.data, partial=True)
@@ -101,7 +107,7 @@ class UserProfileUpdate(APIView):
                 profile.name = new_name
                 profile.save()
             return Response({'success': True, 'message': 'successfully updated your info',
-                        'user': UserSerializer(user).data,'updated_name': new_name}, status=200)
+                        'user': UserSerializer(user,context={'request': request}).data,'updated_name': new_name}, status=200)
         else:
             response = serializer.errors
             return Response(response, status=401)
@@ -112,19 +118,19 @@ class ProfilePictureUpdate(APIView):
     serializer_class=UserProfileSerializer
     parser_class=(FileUploadParser,)
 
-    def patch(self, *args, **kwargs):
+    def patch(self, request, *args, **kwargs):
         rd = random.Random()
         profile_pic=self.request.FILES['profile_pic']
         extension = os.path.splitext(profile_pic.name)[1]
         profile_pic.name='{}{}'.format(uuid.UUID(int=rd.getrandbits(128)), extension)
         filename = default_storage.save(profile_pic.name, profile_pic)
-        setattr(self.request.user.userprofile, 'profile_pic', filename)
+        setattr(self.request.user.profile, 'profile_pic', filename)
         serializer=self.serializer_class(
-            self.request.user.userprofile, data={}, partial=True)
+            self.request.user.profile, data={}, partial=True)
         if serializer.is_valid():
             user=serializer.save().user
             response={'type': 'Success', 'message': 'successfully updated your info',
-                        'user': UserSerializer(user).data}
+                        'user': UserSerializer(user,context={'request': request}).data}
         else:
             response=serializer.errors
         return Response(response)

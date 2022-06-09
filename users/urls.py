@@ -1,7 +1,6 @@
 from django.urls import include, path
 from rest_framework import routers
 from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
     TokenRefreshView,
 )
 from rest_framework_simplejwt.views import TokenBlacklistView
@@ -21,4 +20,6 @@ urlpatterns = [
     path('api/token/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
     path('api/users/register/', views.RegisterView.as_view(), name='register_user'),
     path('api/password/change/',views.password_change,name='password-change'),
+    path('api/profile_update/', views.UserProfileUpdate.as_view(), name="profile_update"),
+    path('api/profile_update/photo/', views.ProfilePictureUpdate.as_view(), name="profile_update_photo"), 
 ]
